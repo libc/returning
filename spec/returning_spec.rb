@@ -22,6 +22,12 @@ describe Returning do
         post.save(:returning => 'name').should eql(post)
       end
     end
+
+    context 'with query cache' do
+      it 'works' do
+        PostQueryCache.first.update_attributes :name => 'cached'
+      end
+    end
   end
 
   describe '#destroy' do
@@ -29,6 +35,12 @@ describe Returning do
       post = Post.first
       post.name = 'hello world'
       post.destroy(:returning => 'name').name.should == 'hello world'
+    end
+
+    context 'with query cache' do
+      it 'works' do
+        expect { PostQueryCache.first.destroy }.not_to raise_error
+      end
     end
   end
 end

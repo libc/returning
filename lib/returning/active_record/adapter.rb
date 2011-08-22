@@ -13,26 +13,35 @@ module Returning
         !!@_returning
       end
 
-      def update(sql, name = nil, binds = [])
-        if @_returning
-          records = @_returning[1].find_by_sql("#{to_sql(sql)} RETURNING #{@_returning[0]}", binds)
-          records.each { |r| r.readonly! }
-          records
-        else
-          super
-        end
+      def exec_with_returning(sql, binds)
+        records = @_returning[1].find_by_sql("#{to_sql(sql)} RETURNING #{@_returning[0]}", binds)
+        records.each { |r| r.readonly! }
+        records
       end
 
-      def delete(arel, name = nil, binds = [])
-        if @_returning
-          records = @_returning[1].find_by_sql("#{to_sql(arel)} RETURNING #{@_returning[0]}", binds)
-          records.each { |r| r.readonly! }
-          records
+      [:update, :delete].each do |method|
+        if ::ActiveRecord::VERSION::STRING =~ /^3\.0/
+          class_eval <<-RUBY, __FILE__, __LINE__+1
+            def #{method}(sql, name = nil)
+              if @_returning
+                exec_with_returning(sql, [])
+              else
+                super
+              end
+            end
+          RUBY
         else
-          super
+          class_eval <<-RUBY, __FILE__, __LINE__+1
+            def #{method}(sql, name = nil, binds = [])
+              if @_returning
+                exec_with_returning(sql, binds)
+              else
+                super
+              end
+            end
+          RUBY
         end
       end
-
 
       def returning(columns, klass)
         old_returning, @_returning = @_returning, [columns, klass]

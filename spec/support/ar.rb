@@ -34,3 +34,8 @@ Migration.up
 
 class Post < ActiveRecord::Base
 end
+
+class PostQueryCache < ActiveRecord::Base
+  set_table_name :posts
+  include ActiveRecord::ConnectionAdapters::QueryCache
+end
