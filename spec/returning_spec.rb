@@ -28,6 +28,15 @@ describe Returning do
         PostQueryCache.first.update_attributes :name => 'cached'
       end
     end
+
+    context 'when validate => false specified' do
+      it 'passes it further' do
+        post = PostWithValidation.first
+        post.name = 'validated name'
+        post.author = nil
+        post.save(:returning => "name", :validate => false).should be_true
+      end
+    end
   end
 
   describe '#destroy' do

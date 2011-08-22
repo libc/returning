@@ -18,10 +18,10 @@ module Returning
       def save(options = {})
         if r = options[:returning]
           connection.returning(r, self.class) do
-            super()
+            super
           end
         else
-          super()
+          super
         end
       end
 

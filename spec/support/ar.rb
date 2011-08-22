@@ -39,3 +39,8 @@ class PostQueryCache < ActiveRecord::Base
   set_table_name :posts
   include ActiveRecord::ConnectionAdapters::QueryCache
 end
+
+class PostWithValidation < ActiveRecord::Base
+  set_table_name :posts
+  validates_presence_of :author
+end
