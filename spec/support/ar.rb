@@ -23,16 +23,28 @@ class Migration < ActiveRecord::Migration
     create_table :posts, :force => true do |t|
       t.string :name, :author
     end
+    create_table :tags, :force => true do |t|
+      t.string :tag
+      t.references :post
+    end
   end
 
   def self.down
     drop_table :posts
+    drop_table :tags
   end
 end
 
 Migration.up
 
 class Post < ActiveRecord::Base
+  has_many :tags
+
+  accepts_nested_attributes_for :tags, :allow_destroy => true
+end
+
+class Tag < ActiveRecord::Base
+  belongs_to :post
 end
 
 class PostQueryCache < ActiveRecord::Base

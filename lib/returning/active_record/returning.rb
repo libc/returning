@@ -3,22 +3,13 @@ require 'active_support/concern'
 module Returning
   module ActiveRecord
     module Returning
-      extend ActiveSupport::Concern
-
-      included do
-        if method(:find_by_sql).arity == 1
-          class_eval do
-            def self.find_by_sql(sql, binds = [])
-              connection.select_all(sanitize_sql(sql), "#{name} Load").collect! { |record| instantiate(record) }
-            end
-          end
-        end
-      end
-
       def save(options = {})
         if r = options[:returning]
-          connection.returning(r, self.class) do
+          begin
+            old_returning, @_returning = @_returning, r
             super
+          ensure
+            @_returning = old_returning
           end
         else
           super
@@ -26,10 +17,18 @@ module Returning
       end
 
       def create_or_update
-        if connection.returning? && !new_record?
-          fields = update
-          # if no attributes were changed return self
-          fields == 0 ? self : fields[0]
+        if @_returning
+          raise ReadOnlyRecord if readonly?
+          if new_record?
+            create
+            self
+          elsif r = update
+            r = self.class.send(:instantiate, r[0])
+            r.readonly!
+            r
+          else
+            false
+          end
         else
           super
         end
@@ -37,8 +36,16 @@ module Returning
 
       def destroy(options = {})
         if r = options[:returning]
-          connection.returning(r, self.class) do
-            super()
+          begin
+            old_returning, @_returning = @_returning, r
+            if r = super()
+              r = self.class.send(:instantiate, r[0])
+              r.readonly!
+            end
+
+            r
+          ensure
+            @_returning = old_returning
           end
         else
           super()
